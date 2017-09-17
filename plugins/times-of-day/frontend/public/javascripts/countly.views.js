@@ -6,29 +6,30 @@ window.todview = countlyView.extend({
 
     beforeRender: function () {
         if (this.template)
-            return $.when(countlyOurplugin.initialize()).then(function () { });
+            return $.when(timesOfDayPlugin.initialize()).then(function () { });
         else {
             var self = this;
-            return $.when($.get(countlyGlobal["path"] + '/times-of-day/templates/tod.html', function (src) {
-                self.template = Handlebars.compile(src);
-            }), countlyOurplugin.initialize()).then(function () { });
+            return $.when(
+                $.get(countlyGlobal["path"] + '/times-of-day/templates/tod.html'),
+                timesOfDayPlugin.initialize()
+            ).then(function (result) {
+                self.template = Handlebars.compile(result[0]);
+             });
         }
     },
 
     renderCommon: function () {
         this.templateData = {
             "page-title": "Times of day",
-            "logo-class": "",
-            "data": countlyOurplugin.getData()
+            "data": timesOfDayPlugin.getData()
         };
 
-        //populate template with data and attach it to page's content element
         $(this.el).html(this.template(this.templateData));
     },
 
     refresh: function () {
         var self = this;
-        $.when(countlyOurplugin.initialize()).then(function () {
+        $.when(timesOfDayPlugin.initialize()).then(function () {
 
             if (app.activeView != self) {
                 return false;
