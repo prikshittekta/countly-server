@@ -48,11 +48,21 @@ var plugin = {},
 		var params = ob.params;
 
 		if (params.qstring.method == "times-of-day") {
-			var result = {
-				"name": "Prikshit Tekta"
-			};
+			var appKey = params.qstring.app_key;
 
-			common.returnOutput(params, result);
+			var criteria = {
+				"app_key": appKey
+			}
+
+			common.db.collection('timesofday').find(criteria).toArray(function (err, result) {
+				if(err){
+					console.log("Error while fetching times of day data: ", err.message);
+					common.returnMessage(params, 400, "Something went wrong");
+					return false;
+				}
+				common.returnOutput(params, result);		
+				return false;		
+			})
 			return true;
 		}
 		return false;
