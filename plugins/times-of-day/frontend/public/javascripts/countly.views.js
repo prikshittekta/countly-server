@@ -52,6 +52,5 @@ $(document).ready(function () {
         '<div class="text" data-localize="times-of-day.plugin-title"></div>' +
         '</a>';
 
-    $('#web-type #engagement-submenu').append(menu);
-    $('#mobile-type #engagement-submenu').append(menu);
+    $('#web-type #analytics-submenu').append(menu);
 });
