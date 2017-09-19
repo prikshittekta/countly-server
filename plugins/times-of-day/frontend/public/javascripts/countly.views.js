@@ -224,7 +224,7 @@ window.todview = countlyView.extend({
                 .text(function (d) { return d })
                 .duration(duration)
                 .attr('x', function (d, i) { return maxR * i * 2 + maxR + yLabelWidth })
-                .style('fill-opacity', 1)
+                .style('fill-opacity', .7)
 
             var yLabels = chart.selectAll('.yLabel')
                 .data(data, function (d) { return d.label })
@@ -246,7 +246,7 @@ window.todview = countlyView.extend({
                 .duration(duration)
                 .attr('y', function (d, i) { return maxR * i * 2 + maxR + xLabelHeight })
                 .attr('transform', 'translate(-6,' + maxR / 2.5 + ')')
-                .style('fill-opacity', 1)
+                .style('fill-opacity', .7)
 
             var vert = chart.selectAll('.vert')
                 .data(labelsX)
