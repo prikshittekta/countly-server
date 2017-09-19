@@ -20,9 +20,10 @@ window.todview = countlyView.extend({
 
     renderCommon: function () {
         this.templateData = {
-            "page-title": "Times of day",
-            "data": timesOfDayPlugin.getData()
+            "page-title": "Times of day"
         };
+
+        this.timesOfDayData = timesOfDayPlugin.getData();
 
         $(this.el).html(this.template(this.templateData));
 
@@ -65,33 +66,31 @@ window.todview = countlyView.extend({
             .style('stroke-width', borderWidth)
             .style('shape-rendering', 'crispEdges')
 
-        var serverData = [
-            [, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Sunday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Monday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Tuesday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Wednesday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Thursday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Friday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-            ["Saturday", 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
-        ];
-
-        load(serverData);
+        load(this.timesOfDayData);
 
         function load(punchCardData) {
 
-            var labelsX = punchCardData[0].slice(1);
-            var data = []
-            for (var i = 0; i < punchCardData.length; i++) {
-                var values = punchCardData[i].slice(1)
+            var labelsX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+            var labelMapping = {
+                "0": "Sunday",
+                "1": "Monday",
+                "2": "Tuesday",
+                "3": "Wednesday",
+                "4": "Thursday",
+                "5": "Friday",
+                "6": "Saturday"
+            };
 
+            var data = [];
+
+            for (var i = 0; i < punchCardData.length; i++) {
                 data.push({
-                    label: punchCardData[i][0],
-                    values: values
+                    label: labelMapping[i],
+                    values: punchCardData[i]
                 })
             }
-
-            update(data, labelsX)
+            
+            update(data, labelsX);
         }
 
         function update(data, labelsX) {

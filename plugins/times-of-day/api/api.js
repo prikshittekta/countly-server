@@ -13,18 +13,21 @@ var plugin = {},
 		var appKey = params.qstring.app_key;
 		var hour = params.qstring.hour;
 		var dow = params.qstring.dow;
-		if (!appKey || !(parseInt(hour) >= 0) || !(parseInt(dow) >= 0)) {
+
+		if (!appKey || 
+			!(parseInt(hour) >= 0 && parseInt(hour) <= 23) || 
+			!(parseInt(dow) >= 0 && parseInt(dow) <= 6)) {
 			return false;
 		}
 
 		var criteria = {
-			"app_key": appKey
+			"_id": "tod_s:" + appKey
 		};
 
 		var incData = {};
-		incData["tod." + dow + "." + hour + ".sessions"] = 1;
+		incData[dow + "." + hour + ".count"] = 1;
 		var setData = {};
-		setData["app_key"] = appKey;
+		setData["_id"] = "tod_s:" + appKey;
 
 		var update = {
 			$set: setData,
@@ -51,17 +54,29 @@ var plugin = {},
 			var appKey = params.qstring.app_key;
 
 			var criteria = {
-				"app_key": appKey
+				"_id": "tod_s:" + appKey
 			}
 
 			common.db.collection('timesofday').find(criteria).toArray(function (err, result) {
-				if(err){
+				if (err) {
 					console.log("Error while fetching times of day data: ", err.message);
 					common.returnMessage(params, 400, "Something went wrong");
 					return false;
 				}
-				common.returnOutput(params, result);		
-				return false;		
+
+				result = result[0] || {};
+				
+				var timesOfDay = [];
+				for(var i = 0; i < 7; i++){
+					timesOfDay[i] = [];
+					for(var j = 0; j < 24; j++){
+						timesOfDay[i][j] = result[i] ? 
+											(result[i][j] ? result[i][j]["count"] : 0) 
+												: 0;
+					}
+				}
+				common.returnOutput(params, timesOfDay);
+				return true;
 			})
 			return true;
 		}

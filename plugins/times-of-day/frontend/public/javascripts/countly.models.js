@@ -13,7 +13,7 @@
                 "method": "times-of-day"
             },
             success: function (json) {
-                _data = json[0];
+                _data = json;
             }
         });
     };
