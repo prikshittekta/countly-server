@@ -5,52 +5,67 @@ window.todview = countlyView.extend({
     },
 
     beforeRender: function () {
-        if (this.template)
-            return $.when(timesOfDayPlugin.initialize()).then(function () { });
-        else {
-            var self = this;
-            return $.when(
-                $.get(countlyGlobal["path"] + '/times-of-day/templates/tod.html'),
-                timesOfDayPlugin.initialize()
-            ).then(function (result) {
-                self.template = Handlebars.compile(result[0]);
-            });
+        var self = this;
+        self.tod_type = "Sessions";
+        return $.when(
+            $.get(countlyGlobal["path"] + '/times-of-day/templates/tod.html'),
+            timesOfDayPlugin.fetchTodData(self.tod_type),
+            timesOfDayPlugin.fetchAllEvents()
+        ).done(function (result) {
+            self.template = Handlebars.compile(result[0]);
+            self.timesOfDayData = timesOfDayPlugin.getTodData();
+            self.eventsList = timesOfDayPlugin.getEventsList();
+        });
+    },
+
+    loadSessionEventData: function () {
+        $("#event-session-list").html('<div data-value="Sessions" class="es-option item" data-localize="times-of-day.sessions">' + jQuery.i18n.map['times-of-day.sessions'] + '</div>');
+
+        var events = this.eventsList.list;
+        for (var i = 0; i < events.length; i++) {
+            $("#event-session-list").append('<div data-value="' + events[i] + '" class="es-option item" data-localize="">' + events[i] + '</div>');
         }
+
+        var self = this;
+        $(".es-option").on("click", function () {
+            var value = $(this).data("value");
+            self.tod_type = value;
+            $.when(
+                timesOfDayPlugin.fetchTodData(value),
+                timesOfDayPlugin.fetchAllEvents()
+            ).done(function (result) {
+                self.timesOfDayData = timesOfDayPlugin.getTodData();
+                self.eventsList = timesOfDayPlugin.getEventsList();
+                self.updateView();
+            });
+        });
     },
 
     renderCommon: function () {
         this.templateData = {
-            "page-title": "Times of day"
+            "page-title": jQuery.i18n.map["times-of-day.plugin-title"]
         };
-
-        this.timesOfDayData = timesOfDayPlugin.getData();
 
         $(this.el).html(this.template(this.templateData));
 
+        this.updateView();
+    },
+
+    updateView: function () {
+        $('#chart').empty();        
+        this.loadSessionEventData();
         this.loadTimesOfDay();
     },
 
-    refresh: function () {
-        var self = this;
-        $.when(timesOfDayPlugin.initialize()).then(function () {
-
-            if (app.activeView != self) {
-                return false;
-            }
-
-            self.renderCommon();
-        });
-    },
-
     loadTimesOfDay: function () {
-        var margin = { top: 10, right: 10, bottom: 10, left: 20 }
+        var margin = { top: 40, right: 10, bottom: 10, left: 20 }
         var width = 960 - margin.left - margin.right
-        var height = 405 - margin.top - margin.bottom
+        var height = 390 - margin.top - margin.bottom
         var padding = 3
         var xLabelHeight = 30
         var yLabelWidth = 80
         var borderWidth = 3
-        var duration = 500
+        var duration = 0
 
         var chart = d3.select('#chart').append('svg')
             .attr('width', width + margin.left + margin.right)
@@ -62,15 +77,15 @@ window.todview = countlyView.extend({
             .attr('x', yLabelWidth)
             .attr('y', xLabelHeight)
             .style('fill-opacity', 0)
-            .style('stroke', '#000')
+            .style('stroke', '#666')
             .style('stroke-width', borderWidth)
             .style('shape-rendering', 'crispEdges')
 
-        load(this.timesOfDayData);
+        loadPunchCard(this.timesOfDayData);
 
-        function load(punchCardData) {
+        function loadPunchCard(punchCardData) {
 
-            var labelsX = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+            var labelsX = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"];
             var labelMapping = {
                 "0": "Sunday",
                 "1": "Monday",
@@ -89,7 +104,7 @@ window.todview = countlyView.extend({
                     values: punchCardData[i]
                 })
             }
-            
+
             update(data, labelsX);
         }
 
@@ -286,7 +301,19 @@ window.todview = countlyView.extend({
                 .attr('width', maxR * 2 * labelsX.length)
                 .attr('height', maxR * 2 * data.length)
         }
-    }
+    },
+
+    refresh: function () {
+        var self = this;
+        return $.when(
+            timesOfDayPlugin.fetchTodData(self.tod_type),
+            timesOfDayPlugin.fetchAllEvents()
+        ).done(function (result) {
+            self.timesOfDayData = timesOfDayPlugin.getTodData();
+            self.eventsList = timesOfDayPlugin.getEventsList();
+            self.updateView();
+        });
+    },
 });
 
 app.todview = new todview();

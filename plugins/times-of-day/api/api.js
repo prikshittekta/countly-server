@@ -14,20 +14,20 @@ var plugin = {},
 		var hour = params.qstring.hour;
 		var dow = params.qstring.dow;
 
-		if (!appKey || 
-			!(parseInt(hour) >= 0 && parseInt(hour) <= 23) || 
+		if (!appKey ||
+			!(parseInt(hour) >= 0 && parseInt(hour) <= 23) ||
 			!(parseInt(dow) >= 0 && parseInt(dow) <= 6)) {
 			return false;
 		}
 
 		var criteria = {
-			"_id": "tod_s:" + appKey
+			"_id": "tod_Sessions:" + appKey
 		};
 
 		var incData = {};
 		incData[dow + "." + hour + ".count"] = 1;
 		var setData = {};
-		setData["_id"] = "tod_s:" + appKey;
+		setData["_id"] = "tod_Sessions:" + appKey;
 
 		var update = {
 			$set: setData,
@@ -52,9 +52,10 @@ var plugin = {},
 
 		if (params.qstring.method == "times-of-day") {
 			var appKey = params.qstring.app_key;
+			var todType = params.qstring.tod_type;
 
 			var criteria = {
-				"_id": "tod_s:" + appKey
+				"_id": "tod_"+ todType + ":" + appKey
 			}
 
 			common.db.collection('timesofday').find(criteria).toArray(function (err, result) {
@@ -65,14 +66,14 @@ var plugin = {},
 				}
 
 				result = result[0] || {};
-				
+
 				var timesOfDay = [];
-				for(var i = 0; i < 7; i++){
+				for (var i = 0; i < 7; i++) {
 					timesOfDay[i] = [];
-					for(var j = 0; j < 24; j++){
-						timesOfDay[i][j] = result[i] ? 
-											(result[i][j] ? result[i][j]["count"] : 0) 
-												: 0;
+					for (var j = 0; j < 24; j++) {
+						timesOfDay[i][j] = result[i] ?
+							(result[i][j] ? result[i][j]["count"] : 0)
+							: 0;
 					}
 				}
 				common.returnOutput(params, timesOfDay);
