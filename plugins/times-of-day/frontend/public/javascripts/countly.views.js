@@ -21,7 +21,7 @@ window.todview = countlyView.extend({
     loadSessionEventData: function () {
         $("#event-session-list").html('<div data-value="Sessions" class="es-option item" data-localize="times-of-day.sessions">' + jQuery.i18n.map['times-of-day.sessions'] + '</div>');
 
-        var events = this.eventsList.list;
+        var events = this.eventsList.list || [];
         for (var i = 0; i < events.length; i++) {
             $("#event-session-list").append('<div data-value="' + events[i] + '" class="es-option item" data-localize="">' + events[i] + '</div>');
         }

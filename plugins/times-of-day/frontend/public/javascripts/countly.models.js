@@ -34,7 +34,7 @@
                 "method": "get_events"
             },
             success: function (json) {
-                _eventsList = json;
+                _eventsList = json || {};
             }
         });
     }
