@@ -215,6 +215,19 @@ app.use(function(req, res, next) {
         next();
     }
 });
+
+app.use('/stylesheets/ionicons/fonts/', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+})
+
+app.use('/fonts/', function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+})
+
 //serve app images
 app.get(countlyConfig.path+'/appimages/*', function(req, res) {
     countlyFs.getStats("appimages", __dirname + '/public/'+req.path, {id:req.params[0]}, function(err, stats){
@@ -278,18 +291,6 @@ app.use(function(req, res, next){
     else
         next();
 });
-
-app.use('/stylesheets/ionicons/fonts/', function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-})
-
-app.use('/fonts/', function (req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-})
 
 app.use(flash());
 app.use(function(req, res, next) {
