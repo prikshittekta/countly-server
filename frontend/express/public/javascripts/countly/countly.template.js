@@ -607,6 +607,7 @@ var AppRouter = Backbone.Router.extend({
         this.userEditCallbacks = [];
         this.refreshScripts = {};
         this.appSettings = {};
+        this.widgetCallbacks = {};
         
         this.routesHit = 0; //keep count of number of routes handled by your application
         /**
@@ -2378,6 +2379,14 @@ var AppRouter = Backbone.Router.extend({
         if (!this.pageScripts[view])
             this.pageScripts[view] = [];
         this.pageScripts[view].push(callback);
+    },
+    addWidgetCallbacks: function(widget, type, callback){
+        if(!this.widgetCallbacks[widget])
+            this.widgetCallbacks[widget] = {};
+        this.widgetCallbacks[widget][type] = callback;
+    },
+    getWidgetCallbacks: function(){
+        return this.widgetCallbacks;
     },
     /**
     * Add callback to be called everytime view is refreshed, because view may reset some html, and we may want to remodify it again. By default this happens every 10 seconds, so not cpu intensive tasks
