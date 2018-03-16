@@ -2380,10 +2380,11 @@ var AppRouter = Backbone.Router.extend({
             this.pageScripts[view] = [];
         this.pageScripts[view].push(callback);
     },
-    addWidgetCallbacks: function(widget, type, callback){
-        if(!this.widgetCallbacks[widget])
+    addWidgetCallbacks: function(widget, options){
+        if(!this.widgetCallbacks[widget]){
             this.widgetCallbacks[widget] = {};
-        this.widgetCallbacks[widget][type] = callback;
+        }
+        Object.assign(this.widgetCallbacks[widget], options);
     },
     getWidgetCallbacks: function(){
         return this.widgetCallbacks;
