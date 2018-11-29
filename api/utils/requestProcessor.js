@@ -2027,26 +2027,16 @@ const processBulkRequest = (i, requests, params) => {
     });
 };
 
-/**
- * Validate App for Write API
- * Checks app_key from the http request against "apps" collection.
- * This is the first step of every write request to API.
- * @param {params} params - params object
- * @param {function} done - callback when processing done
- * @param {number} try_times - how many times request was retried
- * @returns {void} void
- */
-const validateAppForWriteAPI = (params, done, try_times) => {
+const validateAppForAPI = (params, send_early_response, callback) => {
     //ignore possible opted out users for ios 10
     if (params.qstring.device_id === "00000000-0000-0000-0000-000000000000") {
-        common.returnMessage(params, 400, 'Ignoring device_id');
         common.log("request").i('Request ignored: Ignoring zero IDFA device_id', params.req.url, params.req.body);
-        return done ? done() : false;
+        return callback("ignore_device_id");
     }
+
     common.db.collection('apps').findOne({'key': params.qstring.app_key}, (err, app) => {
         if (!app) {
-            common.returnMessage(params, 400, 'App does not exist');
-            return done ? done() : false;
+            return callback("invalid_app");
         }
 
         params.app_id = app._id;
@@ -2068,10 +2058,7 @@ const validateAppForWriteAPI = (params, done, try_times) => {
                 }
                 if (payloads.indexOf((params.qstring.checksum + "").toUpperCase()) === -1) {
                     console.log("Checksum did not match", params.href, params.req.body, payloads);
-                    if (plugins.getConfig("api", params.app && params.app.plugins, true).safe) {
-                        common.returnMessage(params, 400, 'Request does not match checksum');
-                    }
-                    return done ? done() : false;
+                    return callback("checksum_mismatch");
                 }
             }
             else if (typeof params.qstring.checksum256 !== "undefined") {
@@ -2081,18 +2068,12 @@ const validateAppForWriteAPI = (params, done, try_times) => {
                 }
                 if (payloads.indexOf((params.qstring.checksum256 + "").toUpperCase()) === -1) {
                     console.log("Checksum did not match", params.href, params.req.body, payloads);
-                    if (plugins.getConfig("api", params.app && params.app.plugins, true).safe) {
-                        common.returnMessage(params, 400, 'Request does not match checksum');
-                    }
-                    return done ? done() : false;
+                    return callback("checksum_mismatch");
                 }
             }
             else {
                 console.log("Request does not have checksum", params.href, params.req.body);
-                if (plugins.getConfig("api", params.app && params.app.plugins, true).safe) {
-                    common.returnMessage(params, 400, 'Request does not have checksum');
-                }
-                return done ? done() : false;
+                return callback("checksum_unavailable");
             }
         }
 
@@ -2160,7 +2141,7 @@ const validateAppForWriteAPI = (params, done, try_times) => {
                                         uid: uid,
                                         did: params.qstring.device_id
                                     }, function() {
-                                        restartRequest(params, done, try_times, validateAppForWriteAPI);
+                                        return callback("restart_request");
                                     });
                                 }
                                 else {
@@ -2172,7 +2153,7 @@ const validateAppForWriteAPI = (params, done, try_times) => {
                                         _id: params.app_user_id,
                                         uid: {$exists: false}
                                     }, {$set: {uid: uid}}, {upsert: true}, function() {
-                                        restartRequest(params, done, try_times, validateAppForWriteAPI);
+                                        return callback("restart_request");
                                     });
                                 }
                             }
@@ -2194,28 +2175,89 @@ const validateAppForWriteAPI = (params, done, try_times) => {
                         countlyApi.mgmt.appUsers.merge(params.app_id, params.app_user, params.app_user_id, old_id, params.qstring.device_id, params.qstring.old_device_id, function() {
                             //remove old device ID and retry request
                             params.qstring.old_device_id = null;
-                            restartRequest(params, done, try_times, validateAppForWriteAPI);
+                            return callback("restart_request");
                         });
 
                         //do not proceed with request
-                        return false;
+                        return callback("donot_proceed");
                     }
                     else {
-                        processRequestData(params, app, done);
+                        return callback("process_data");
                     }
                 }
                 else {
-                    if (plugins.getConfig("api", params.app && params.app.plugins, true).safe && !params.res.finished) {
-                        common.returnMessage(params, 200, 'Request ignored: ' + params.cancelRequest);
-                    }
                     common.log("request").i('Request ignored: ' + params.cancelRequest, params.req.url, params.req.body);
-                    return done ? done() : false;
+                    return callback("request_ignored");
                 }
             });
         });
-        if (!plugins.getConfig("api", params.app && params.app.plugins, true).safe && !params.res.finished) {
-            common.returnMessage(params, 200, 'Success');
-            return;
+        if (send_early_response) {
+            return callback("send_success_response");
+        }
+    });
+};
+
+/**
+ * Validate App for Write API
+ * Checks app_key from the http request against "apps" collection.
+ * This is the first step of every write request to API.
+ * @param {params} params - params object
+ * @param {function} done - callback when processing done
+ * @param {number} try_times - how many times request was retried
+ * @returns {void} void
+ */
+const validateAppForWriteAPI = (params, done, try_times) => {
+    var sendEarlyResponse = true;
+    validateAppForAPI(params, sendEarlyResponse, function(retCode) {
+
+        if (retCode == "ignore_device_id") {
+            common.returnMessage(params, 400, 'Ignoring device_id');
+            return done ? done() : false;
+        }
+
+        if (retCode == "invalid_app") {
+            common.returnMessage(params, 400, 'App does not exist');
+            return done ? done() : false;
+        }
+
+        if (retCode == "checksum_mismatch") {
+            if (plugins.getConfig("api", params.app && params.app.plugins, true).safe) {
+                common.returnMessage(params, 400, 'Request does not match checksum');
+            }
+            return done ? done() : false;
+        }
+
+        if (retCode == "checksum_unavailable") {
+            if (plugins.getConfig("api", params.app && params.app.plugins, true).safe) {
+                common.returnMessage(params, 400, 'Request does not have checksum');
+            }
+            return done ? done() : false;
+        }
+
+        if (retCode == "request_ignored") {
+            if (plugins.getConfig("api", params.app && params.app.plugins, true).safe && !params.res.finished) {
+                common.returnMessage(params, 200, 'Request ignored: ' + params.cancelRequest);
+            }
+            return done ? done() : false;
+        }
+
+        if (retCode == "restart_request") {
+            return restartRequest(params, done, try_times, validateAppForWriteAPI);
+        }
+
+        if (retCode == "process_data") {
+            return processRequestData(params, app, done);
+        }
+
+        if (retCode == "send_success_response") {
+            if (!plugins.getConfig("api", params.app && params.app.plugins, true).safe && !params.res.finished) {
+                common.returnMessage(params, 200, 'Success');
+                return;
+            }
+        }
+
+        if (retCode == "donot_proceed") {
+            return false;
         }
     });
 };
